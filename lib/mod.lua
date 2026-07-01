@@ -3,6 +3,7 @@ local mod = require 'core/mods'
 local modmenu = require '7u-patch-companion/lib/modmenu'
 mlay=include("7u-patch-companion/lib/mlay"):new()
 local coord=include("7u-patch-companion/lib/elems/coord")
+local morphg=include("7u-patch-companion/lib/elems/morphg")
 local knob=include("7u-patch-companion/lib/elems/knob")
 
 -- BEGIN CONFIG VARIABLES
@@ -24,18 +25,12 @@ function tup()
   include 'tools/tools'
 end
 
-local knob_elem = knob:new({
-  size = 20,
-})
-
 -- UI ELEMENTS
+local mg_info = morphg:new()
 mlay:add_element(
-  'trackball_coord',
-  coord:new({
-    size = 20,
-    range = 5
-  }),
-  128-20,
+  'mg_info',
+  mg_info,
+  128-mg_info.width,
   0,
   true,
   1,
@@ -43,14 +38,30 @@ mlay:add_element(
 )
 
 mlay:add_element(
-  'knob',
-  knob_elem,
+  'trackball_coord',
+  coord:new({
+    size = 20,
+    range = 5
+  }),
   128-20,
-  25,
+  6,
   true,
   1,
   'SOURCE'
 )
+
+-- local knob_elem = knob:new({
+--   size = 20,
+-- })
+-- mlay:add_element(
+--   'knob',
+--   knob_elem,
+--   128-20,
+--   30,
+--   true,
+--   1,
+--   'SOURCE'
+-- )
 
 -- MOD MENU AND PARAMS
 local menu = modmenu.new("my_mod_menu_id", mod.this_name)
@@ -64,7 +75,7 @@ mod_params:add{
   default=1,
   action=function(v)
     if v == 0 then
-      mlay.draw = falsse
+      mlay.draw = false
     else
       mlay.draw = true
     end
@@ -79,7 +90,8 @@ mod_params:add{
   max=3,
   default=0,
   action=function(v)
-    crow.public.morphagene_octave_offset = v
+    -- crow.public.morphagene_octave_offset = v
+    mlay:update_element('mg_info', {octave=v})
   end
 }
 
@@ -89,9 +101,10 @@ mod_params:add{
   type="number",
   min=-1,
   max=1,
-  default=0,
+  default=1,
   action=function(v)
-    crow.public.morphagene_direction = v
+    -- crow.public.morphagene_direction = v
+    mlay:update_element('mg_info', {direction=v})
   end
 }
 
@@ -193,7 +206,9 @@ local endgame_handlers = {
     mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
   end,
   [59] = function(v) -- F1, mouse button top left
-    mod_params:delta("draw_changes", 1)
+    if v == 1 then
+      mod_params:delta("draw_changes", 1)
+    end
   end,
   [60] = function(v) -- F2, mouse button top right
   end,
@@ -205,7 +220,9 @@ local endgame_handlers = {
   end,
   [0x111] = function(v) -- right mouse button, mouse button right lower
     -- crow.public.morphagene_direction = crow.public.morphagene_direction * -1
-    mod_params:set("morphagene_direction", mod_params:get("morphagene_direction") * -1)
+    if v == 1 then
+      mod_params:set("morphagene_direction", mod_params:get("morphagene_direction") * -1)
+    end
   end,
   [0x113] = function(v) -- BTN_SIDE, mouse button bottom left
   end,
@@ -217,11 +234,15 @@ local endgame_handlers = {
   end,
   [65] = function(v) -- F7, encoder 2 down
     -- crow.public.morphagene_octave_offset = crow.public.morphagene_octave_offset - 1
-    mod_params:delta("morphagene_octave_offset", -1)
+    if v == 1 then
+      mod_params:delta("morphagene_octave_offset", -1)
+    end
   end,
   [66] = function(v) -- F8, encoder 2 up
     -- crow.public.morphagene_octave_offset = crow.public.morphagene_octave_offset + 1
-    mod_params:delta("morphagene_octave_offset", 1)
+    if v == 1 then
+      mod_params:delta("morphagene_octave_offset", 1)
+    end
   end,
 }
 

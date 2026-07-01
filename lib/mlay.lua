@@ -113,6 +113,8 @@ end
 
 function Mlay:update_element(id, args)
   local e = self.elements[id]
+  if not e then return end
+
   for k,v in pairs(args) do
     e.elem[k] = v
   end
