@@ -12,6 +12,7 @@ function Mlay:new(args)
 
   self.elements = {}
   self.draw = args.draw or false
+  self.fps = args.fps or 60
 
   return self
 end
@@ -26,11 +27,15 @@ function Mlay:capture_redraw()
     screen.update = saved_update
   end
 
+  -- when global redraw is called, check if it was called from the mod
+  -- if not, just draw to the script's canvas
+  -- actual screen updates only occur at the fps set by mlay
   norns.script.redraw = function(from_mod)
     if not from_mod then
       self.script_redraw()
+    else
+      self:redraw()
     end
-    self:redraw()
   end
   redraw = norns.script.redraw
 
@@ -40,7 +45,7 @@ function Mlay:capture_redraw()
 
   self.draw_metro = metro.init(function()
     redraw(true)
-  end, 1/60)
+  end, 1 / self.fps)
   self.draw_metro:start()
 end
 
@@ -51,49 +56,58 @@ function Mlay:redraw()
   for _,e in pairs(self.elements) do
     if e.show then
       e.elem:redraw()
+      screen.blend_mode(e.blend_mode)
       screen.display_image(e.elem.image, e.x, e.y)
+    elseif e.fade_counter then
+      e.fade_counter = e.fade_counter - 1
+      if e.fade_counter <= 0 then
+        e.fade_counter = nil
+      else
+        e.elem:redraw()
+        screen.blend_mode(e.blend_mode)
+        screen.display_image(e.elem.image, e.x, e.y)
+      end
     end
   end
 
   screen.update()
+  screen.blend_mode('OVER') -- restore default blend mode
 end
 
 function Mlay:show_element(id)
   local e = self.elements[id]
 
   e.show = true
+end
 
-  if e.fade_metro then
-    metro.free(e.fade_metro.id)
-    e.fade_metro = nil
-  end
+function Mlay:show_element_and_fade(id)
+  local e = self.elements[id]
 
-  if e.fade_time then
-    -- e.fade_metro = metro.init(function()
-    --   e.show = false
-    --   metro.free(e.fade_metro.id)
-    --   e.fade_metro = nil
-    -- end, e.fade_time, 1)
-  end
+  e.fade_counter = e.fade_time * self.fps
 end
 
 function Mlay:hide_element(id)
   local e = self.elements[id]
 
   e.show = false
-  if e.fade_metro then
-    metro.free(e.fade_metro.id)
-    e.fade_metro = nil
-  end
+  e.fade_counter = nil
 end
 
-function Mlay:add_element(id, elem, x, y, show_on_update, fade_time)
+function Mlay:add_element(id, elem, x, y, show_on_update, fade_time, blend_mode)
   self.elements[id] = {
     elem = elem,
     x = x,
     y = y,
     show_on_update = show_on_update,
-    fade_time = fade_time
+    fade_time = fade_time or 1,
+    -- useful blend modes:
+    -- SOURCE: completely replaces where it's drawn to, no transparency
+    -- DIFFERENCE: XORs brightness, dark on bright content and bright on dark content
+    -- LIGHTEN: shows only where it's brighter than the background
+    -- ADD: accumulates brightness toward white
+    -- DARKEN: mark darkens the background
+    -- the default OVER will leave undrawn areas showing the underlying canvas
+    blend_mode = blend_mode or 'OVER'
   }
 end
 
@@ -105,7 +119,7 @@ function Mlay:update_element(id, args)
   e.elem.dirty = true
 
   if e.show_on_update then
-    self:show_element(id)
+    e.fade_counter = e.fade_time * self.fps
   end
 end
 

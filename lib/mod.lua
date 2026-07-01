@@ -38,7 +38,8 @@ mlay:add_element(
   128-20,
   0,
   true,
-  1
+  1,
+  'SOURCE'
 )
 
 mlay:add_element(
@@ -47,9 +48,9 @@ mlay:add_element(
   128-20,
   25,
   true,
-  nil
+  1,
+  'SOURCE'
 )
-mlay:show_element('knob')
 
 -- MOD MENU AND PARAMS
 local menu = modmenu.new("my_mod_menu_id", mod.this_name)
@@ -157,53 +158,8 @@ mod_params:bang()
 mod.menu.register(mod.this_name, menu)
 
 -- CROW HOOKS
--- local pubvars = {
---   morphagene_octave_offset,
---   morphagene_direction,
--- }
-
--- local function pubvar_save()
---   local t = {}
---   for k,v in pairs(pubvars) do
---     t[k] = crow.public[k]
---   end
---   tab.save(t, pubvar_save_location)
--- end
-
--- local function pubvar_load()
---   if not util.file_exists(pubvar_save_location) then
---     debug_msg("attempted to load "..pubvar_save_location.." but file didn't exist")
---     return
---   end
-
---   local t = tab.load(pubvar_save_location)
---   for k,v in pairs(t) do
---     crow.public[k] = v
---   end
--- end
-
 -- prevent crow from being reset when loading a script
--- original below
-
--- from lua/core/crow.lua:
--- function norns.crow.init()
---   -- clear crow's VM allowing for full customization by norns script
---   crow.reset()
-
---   -- clear all but the static crow events
---   norns.crow.reset_events()
-
---   -- customizable system events
---   norns.crow.add = function(id, name, dev)
---     crow.reset() -- reset crow env on (re)connection
---     print(">>>>>> norns.crow.add / " .. id .. " / " .. name)
---   end
---   norns.crow.remove = function(id) print(">>>>>> norns.crow.remove " .. id) end
---   norns.crow.receive = function(...) print("crow:",...) end
-
---   -- reset user callbacks
---   norns.crow.public.reset()
--- end
+-- original at lua/core/crow.lua
 norns.crow.init = function()
  norns.crow.reset_events()
 
@@ -232,8 +188,9 @@ local endgame_handlers = {
     mod_params:delta("trackball_y", trackball_pointer_sensitivity * v * -1)
   end,
   [11] = function(v) -- also could check type == 2 (EV_REL), scroll
-    knob_elem.angle = knob_elem.angle + v * -0.001
-    knob_elem.dirty = true
+    -- knob_elem.angle = knob_elem.angle + v * -0.001
+    -- knob_elem.dirty = true
+    mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
   end,
   [59] = function(v) -- F1, mouse button top left
     mod_params:delta("draw_changes", 1)
