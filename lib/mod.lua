@@ -205,6 +205,9 @@ local endgame_handlers = {
   end,
   [11] = function(v) -- also could check type == 2 (EV_REL), scroll
     -- mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
+    -- function `sd` must be implemented on crow side
+    v = v * -0.001
+    crow(string.format("sd(%.4g)", v))
   end,
   [59] = function(v) -- F1, mouse button top left
     if v == 1 then

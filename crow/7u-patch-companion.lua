@@ -185,6 +185,10 @@ function time_parameter_handler(volts)
     end
 end
 
+function sd(delta)
+    output[spinner_out]:delta_phase_offset(delta)
+end
+
 -- MORPHAGENE
 morphagene_pitch_map = {
     [-48]=0,  -- +1 octave reverse
