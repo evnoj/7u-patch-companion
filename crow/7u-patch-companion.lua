@@ -394,7 +394,7 @@ txi_poll_handlers = {
             end
         end
 
-        -- note = note * public.morphagene_direction
+        note = note * public.morphagene_direction
 
         if note ~= morphagene_prev_note then
             morphagene_prev_note = note

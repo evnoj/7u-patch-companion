@@ -8,7 +8,7 @@ local knob=include("7u-patch-companion/lib/elems/knob")
 
 -- BEGIN CONFIG VARIABLES
 local debug_7u = false
-local crow_script = "7u-patch-companion.lua"
+local crow_script = "7u-patch-companion/crow/7u-patch-companion.lua"
 -- local pubvar_save_location = "/home/we/dust/data/7u-patch-companion/saved.tbl"
 local pset_restore_location = "/home/we/dust/data/7u-patch-companion/restore.pset"
 local trackball_pointer_sensitivity = 0.005
@@ -90,7 +90,7 @@ mod_params:add{
   max=3,
   default=0,
   action=function(v)
-    -- crow.public.morphagene_octave_offset = v
+    crow.public.morphagene_octave_offset = v
     mlay:update_element('mg_info', {octave=v})
   end
 }
@@ -103,7 +103,7 @@ mod_params:add{
   max=1,
   default=1,
   action=function(v)
-    -- crow.public.morphagene_direction = v
+    crow.public.morphagene_direction = v
     mlay:update_element('mg_info', {direction=v})
   end
 }
@@ -114,7 +114,9 @@ mod_params:add{
   type="binary",
   behavior="trigger",
   action=function()
+    crow.clear()
     norns.crow.loadscript(crow_script, true)
+    crow.public.discover()
   end,
 }
 
@@ -167,19 +169,19 @@ local function params_restore()
 end
 
 params_restore()
-mod_params:bang()
 mod.menu.register(mod.this_name, menu)
 
 -- CROW HOOKS
--- prevent crow from being reset when loading a script
+-- prevent crow from being reset when loading a script or hotplugging
 -- original at lua/core/crow.lua
 norns.crow.init = function()
  norns.crow.reset_events()
 
+  print("CROW INIT")
+  norns.crow.public.discovered = function() mod_params:bang() end
   norns.crow.add = function(id, name, dev)
     print(">>>>>> norns.crow.add / " .. id .. " / " .. name)
     crow.public.discover()
-    mod_params:bang()
   end
   norns.crow.remove = function(id)
     params_save()
@@ -189,6 +191,7 @@ norns.crow.init = function()
   norns.crow.public.reset()       -- clears only norns' LOCAL mirror + callbacks
   crow.public.discover()
 end
+norns.crow.init()
 
 -- ENDGAME TRACKBALL
 local endgame_handlers = {
@@ -201,9 +204,7 @@ local endgame_handlers = {
     mod_params:delta("trackball_y", trackball_pointer_sensitivity * v * -1)
   end,
   [11] = function(v) -- also could check type == 2 (EV_REL), scroll
-    -- knob_elem.angle = knob_elem.angle + v * -0.001
-    -- knob_elem.dirty = true
-    mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
+    -- mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
   end,
   [59] = function(v) -- F1, mouse button top left
     if v == 1 then
@@ -251,15 +252,32 @@ local function endgame_input(type, code, val)
   if func then func(val) end
 end
 
--- MOD HOOKS
-mod.hook.register("script_post_init", "7u patch companion post init", function()
-  mlay:capture_redraw()
-
-  for i,device in pairs(hid.vports) do
+function set_endgame_event_handler()
+  for _,device in pairs(hid.devices) do
     if (device.name == "endgame trackball") then
       device.event = endgame_input
     end
   end
+end
+
+-- hid.cleanup() nils every device/vport event handler
+-- runs from from norns.script.clear() during script load and at boot
+local orig_hid_cleanup = hid.cleanup
+hid.cleanup = function()
+  orig_hid_cleanup()
+  set_endgame_event_handler()
+end
+
+-- MOD HOOKS
+mod.hook.register("system_post_startup", "7u patch companion post startup", function()
+  crow.public.discover()
+  set_endgame_event_handler()
+end)
+
+mod.hook.register("script_post_init", "7u patch companion post init", function()
+  mlay:capture_redraw()
+  set_endgame_event_handler()
+  crow.public.discover()
 end)
 
 mod.hook.register("system_pre_shutdown", "7u patch companion pre shutdown", function()
