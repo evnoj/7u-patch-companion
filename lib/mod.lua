@@ -22,7 +22,7 @@ local function debug_msg(s)
 end
 
 function tup()
-  include 'tools/tools'
+  require 'tools/tools'
 end
 
 -- UI ELEMENTS
@@ -231,6 +231,9 @@ local endgame_handlers = {
   [0x113] = function(v) -- BTN_SIDE, mouse button bottom left
   end,
   [0x114] = function(v) -- BTN_EXTRA, mouse button bottom right
+    if v == 1 then
+      mod_params:set("morphagene_octave_offset", 0)
+    end
   end,
   [63] = function(v) -- F5, encoder 1 down
   end,
