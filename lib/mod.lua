@@ -172,19 +172,50 @@ params_restore()
 mod.menu.register(mod.this_name, menu)
 
 -- CROW HOOKS
+-- noop clock_enable, the crow script handles sending the clock sync events
+norns.crow.clock_enable = function()
+  -- original
+  -- directly set the change event on crow so it conforms to old-style event names
+  -- norns.crow.send[[
+  --   input[1].change = function()
+  --     tell('change',1,1)
+  --   end
+  --   input[1].mode('change',2,0.1,'rising')
+  -- ]]
+end
+
+-- allow setting clock source to crow from from
+norns.crow.events.clock_enable = function(enable)
+  if enable then
+    params:set("clock_source", 4) -- crow
+  elseif params:get("clock_source") == 4 then
+    params:set("clock_source", 1) -- internal
+  end
+end
+
 -- prevent crow from being reset when loading a script or hotplugging
 -- original at lua/core/crow.lua
 norns.crow.init = function()
  norns.crow.reset_events()
 
   print("CROW INIT")
-  norns.crow.public.discovered = function() mod_params:bang() end
+  norns.crow.public.discovered = function()
+    if crow.public.clocked then
+      params:set("clock_source", 4)
+    end
+
+    mod_params:bang()
+  end
   norns.crow.add = function(id, name, dev)
     print(">>>>>> norns.crow.add / " .. id .. " / " .. name)
     crow.public.discover()
   end
   norns.crow.remove = function(id)
     params_save()
+
+    if params:get("clock_source") == 4 then
+      params:set("clock_source", 1)
+    end
   end
   norns.crow.receive = function(...) print("crow:", ...) end
 

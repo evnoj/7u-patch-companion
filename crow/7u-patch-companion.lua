@@ -34,6 +34,7 @@
 -- CONFIGURATION VARIABLES
 clock_in = 2 -- crow input for clock signal
 clock_in_div = 1/4 -- clock div for clock input
+local clock_div_norns = 1/4
 
 -- spinner
 spinner_out = 3 -- the crow output that the spinner uses
@@ -73,6 +74,7 @@ spinner_clock_div_table = {
 -- PUBLIC VARIABLES
 public{morphagene_octave_offset = 0}:range(-3,3)
 public{morphagene_direction = 1}:range(-1,1)
+public{clocked = 0}:type('@int') -- 0 is unclocked, 1 is clocked
 
 -- UTILITIES
 -- truncates digits after thousandths place
@@ -121,11 +123,21 @@ local function bsearch(t, left, right, val)
 end
 
 -- CLOCKWORK
+local function send_clock_to_norns()
+    while true do
+        clock.sync(clock_div_norns)
+        tell('change', 1, 1)
+    end
+end
+
 function await_clock()
     input[clock_in].mode( 'change', 3, 0.1, 'rising' )
     input[clock_in].change = function()
         input[clock_in].mode( 'clock', clock_in_div)
         output[spinner_out].clocked = true
+        public.clocked = 1
+        tell('clock_enable', quote(true))
+        clock_norns = clock.run(send_clock_to_norns)
         clock_timeout_checker:start()
     end
 end
@@ -135,6 +147,9 @@ clock_timeout_checker = metro.init{
         if clock.time_since_last_input() > 4 then -- 4 second timeout
             clock_timeout_checker:stop()
             output[spinner_out].clocked = false
+            public.clocked = 0
+            tell('clock_enable', quote(false))
+            clock.cancel(clock_norns)
             await_clock()
         end
     end,
@@ -149,9 +164,7 @@ function update_time_free(p, dir)
     local t = time_min * 2^((1-p) * 10)
     output[spinner_out].time = t
     output[spinner_out].direction = dir
-    -- print(t)
 end
--- pr=true
 
 function update_time_synced(p, dir)
     output[spinner_out].direction = dir
