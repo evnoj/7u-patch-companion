@@ -20,6 +20,15 @@ end
 function Mlay:capture_redraw()
   local saved_update = screen.update
   self.script_canvas = screen.create_image(128, 64)
+
+  -- set the created canvas defaults same as norns does
+  screen.draw_to(self.script_canvas, function()
+    screen.aa(0)
+    screen.line_width(1)
+    screen.font_face(1)
+    screen.font_size(8)
+  end)
+
   local script_redraw = norns.script.redraw
   self.script_redraw = function()
     screen.update = noop
@@ -27,26 +36,23 @@ function Mlay:capture_redraw()
     screen.update = saved_update
   end
 
-  -- when global redraw is called, check if it was called from the mod
-  -- if not, just draw to the script's canvas
-  -- actual screen updates only occur at the fps set by mlay
-  norns.script.redraw = function(from_mod)
-    if not from_mod then
+  local script_refresh = norns.script.refresh
+  self.script_refresh = function()
+    screen.update = noop
+    screen.draw_to(self.script_canvas, script_refresh)
+    screen.update = saved_update
+  end
+
+  norns.script.redraw = function()
       self.script_redraw()
-    else
-      self:redraw()
-    end
   end
   redraw = norns.script.redraw
 
-  if self.draw_metro then
-    metro.free(self.draw_metro.id)
+  norns.script.refresh = function()
+    self.script_refresh()
+    self:redraw()
   end
-
-  self.draw_metro = metro.init(function()
-    redraw(true)
-  end, 1 / self.fps)
-  self.draw_metro:start()
+  refresh = norns.script.refresh
 end
 
 function Mlay:redraw()

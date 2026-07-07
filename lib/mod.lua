@@ -50,18 +50,18 @@ mlay:add_element(
   'SOURCE'
 )
 
-local knob_elem = knob:new({
-  size = 20,
-})
-mlay:add_element(
-  'knob',
-  knob_elem,
-  128-20,
-  30,
-  true,
-  1,
-  'SOURCE'
-)
+-- local knob_elem = knob:new({
+--   size = 20,
+-- })
+-- mlay:add_element(
+--   'knob',
+--   knob_elem,
+--   128-20,
+--   30,
+--   true,
+--   1,
+--   'SOURCE'
+-- )
 
 -- MOD MENU AND PARAMS
 local menu = modmenu.new("my_mod_menu_id", mod.this_name)
@@ -235,7 +235,7 @@ local endgame_handlers = {
     mod_params:delta("trackball_y", trackball_pointer_sensitivity * v * -1)
   end,
   [11] = function(v) -- also could check type == 2 (EV_REL), scroll
-    mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
+    -- mlay:update_element('knob', {angle = knob_elem.angle + v * -0.001})
     -- function `sd` must be implemented on crow side
     v = v * 0.001
     crow(string.format("sd(%.4g)", v))
