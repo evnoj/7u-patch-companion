@@ -185,7 +185,8 @@ norns.crow.clock_enable = function()
 end
 
 -- allow setting clock source to crow from from
-norns.crow.events.clock_enable = function(enable)
+crow_clock_enable = function(enable)
+  print("CLOCK ENABLE EVENT: "..enable)
   if enable then
     params:set("clock_source", 4) -- crow
   elseif params:get("clock_source") == 4 then
@@ -196,9 +197,9 @@ end
 -- prevent crow from being reset when loading a script or hotplugging
 -- original at lua/core/crow.lua
 norns.crow.init = function()
- norns.crow.reset_events()
+  norns.crow.reset_events()
+  norns.crow.events.clock_enable = crow_clock_enable
 
-  print("CROW INIT")
   norns.crow.public.discovered = function()
     if crow.public.clocked then
       params:set("clock_source", 4)
