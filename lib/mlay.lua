@@ -59,19 +59,21 @@ function Mlay:redraw()
   screen.clear()
   screen.display_image(self.script_canvas, 0, 0)
 
-  for _,e in pairs(self.elements) do
-    if e.show then
-      e.elem:redraw()
-      screen.blend_mode(e.blend_mode)
-      screen.display_image(e.elem.image, e.x, e.y)
-    elseif e.fade_counter then
-      e.fade_counter = e.fade_counter - 1
-      if e.fade_counter <= 0 then
-        e.fade_counter = nil
-      else
+  if self.draw then
+    for _,e in pairs(self.elements) do
+      if e.show then
         e.elem:redraw()
         screen.blend_mode(e.blend_mode)
         screen.display_image(e.elem.image, e.x, e.y)
+      elseif e.fade_counter then
+        e.fade_counter = e.fade_counter - 1
+        if e.fade_counter <= 0 then
+          e.fade_counter = nil
+        else
+          e.elem:redraw()
+          screen.blend_mode(e.blend_mode)
+          screen.display_image(e.elem.image, e.x, e.y)
+        end
       end
     end
   end
