@@ -13,6 +13,7 @@ function Mlay:new(args)
   self.elements = {}
   self.draw = args.draw or false
   self.fps = args.fps or 60
+  self.depth = 0 -- protects against nested drawing calls
 
   return self
 end
@@ -30,27 +31,40 @@ function Mlay:capture_redraw()
   end)
 
   local script_redraw = norns.script.redraw
-  self.script_redraw = function()
+  self.script_redraw = function(...)
+    local args = table.pack(...)
     screen.update = noop
-    screen.draw_to(self.script_canvas, script_redraw)
+    self.depth = self.depth + 1
+    screen.draw_to(self.script_canvas, function() script_redraw(table.unpack(args, 1, args.n)) end)
+    self.depth = self.depth - 1
     screen.update = saved_update
   end
 
   local script_refresh = norns.script.refresh
-  self.script_refresh = function()
+  self.script_refresh = function(...)
+    local args = table.pack(...)
     screen.update = noop
-    screen.draw_to(self.script_canvas, script_refresh)
+    self.depth = self.depth + 1
+    screen.draw_to(self.script_canvas, function() script_refresh(table.unpack(args, 1, args.n)) end)
+    self.depth = self.depth - 1
     screen.update = saved_update
   end
 
-  norns.script.redraw = function()
-      self.script_redraw()
+  norns.script.redraw = function(...)
+    self.script_redraw(...)
   end
   redraw = norns.script.redraw
 
-  norns.script.refresh = function()
-    self.script_refresh()
-    self:redraw()
+  norns.script.refresh = function(...)
+    self.script_refresh(...)
+
+    -- depth tracks "nested" drawing calls
+    -- this surfaced with eterna, which calls refresh from redraw
+    -- since the mlay refresh runs `screen.clear`, this was getting called in eterna's canvas
+    -- this ensures that our custom redrawing doesn't run in the script's canvas
+    if self.depth == 0 then
+      self:redraw()
+    end
   end
   refresh = norns.script.refresh
 end
