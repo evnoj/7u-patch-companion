@@ -33,8 +33,6 @@
 
 -- CONFIGURATION VARIABLES
 clock_in = 2 -- crow input for clock signal
-clock_in_div = 1/4 -- clock div for clock input
-local clock_div_norns = 1/4
 
 -- spinner
 spinner_out = 3 -- the crow output that the spinner uses
@@ -75,6 +73,18 @@ spinner_clock_div_table = {
 public{morphagene_octave_offset = 0}:range(-3,3)
 public{morphagene_direction = 1}:range(-1,1)
 public{clocked = 0}:type('@int') -- 0 is unclocked, 1 is clocked
+local clock_in_div_cached = public.clock_in_div
+local function update_clock_in_div(div)
+    if div ~= clock_in_div_cached then
+        clock_in_div_cached = div
+
+        if input[clock_in]._mode == 'clock' then
+            input[clock_in].mode('clock', div)
+        end
+    end
+end
+public{clock_in_div = 1/4}:action(update_clock_in_div)
+public{clock_norns_div = 1/4}
 
 -- UTILITIES
 -- truncates digits after thousandths place
@@ -125,7 +135,7 @@ end
 -- CLOCKWORK
 local function send_clock_to_norns()
     while true do
-        clock.sync(clock_div_norns)
+        clock.sync(public.clock_norns_div)
         tell('change', 1, 1)
     end
 end
@@ -133,7 +143,7 @@ end
 function await_clock()
     input[clock_in].mode( 'change', 3, 0.1, 'rising' )
     input[clock_in].change = function()
-        input[clock_in].mode( 'clock', clock_in_div)
+        input[clock_in].mode( 'clock', public.clock_in_div)
         output[spinner_out].clocked = true
         public.clocked = 1
         tell('clock_enable', quote(true))

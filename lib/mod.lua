@@ -108,6 +108,77 @@ mod_params:add{
   end
 }
 
+local crow_clock_div_base_opts = {
+  "16/1",
+  "8/1",
+  "7/1",
+  "6/1",
+  "5/1",
+  "4/1",
+  "3/1",
+  "2/1",
+  "3/2",
+  "4/3",
+  "5/4",
+  "1/1",
+  "4/5",
+  "3/4",
+  "2/3",
+  "1/2",
+  "1/3",
+  "1/4",
+  "1/5",
+  "1/6",
+  "1/7",
+  "1/8",
+  "1/16",
+}
+
+local crow_clock_div_mult_opts = {
+  "1/32",
+  "1/16",
+  "1/8",
+  "1/4",
+  "1/2",
+  "1",
+  "2",
+  "4",
+  "8",
+  "16",
+  "32",
+}
+
+local function update_crow_clock_div()
+  local base = crow_clock_div_base_opts[mod_params:get("crow_clock_div_base")]
+  local mult = crow_clock_div_mult_opts[mod_params:get("crow_clock_div_mult")]
+  -- local base_num,base_den = base:match("^(%d+)/(%d+)$")
+  -- local mult_num,mult_den = mult:match("^(%d+)/(%d+)$")
+  -- base = tonumber(base_num) / tonumber(base_den)
+  -- mult = tonumber(mult_num) / tonumber(mult_den)
+  base = load("return "..base)()
+  mult = load("return "..mult)()
+
+  crow.public.clock_norns_div = base * mult
+end
+
+mod_params:add{
+  id="crow_clock_div_base",
+  name="crow clock div",
+  type="option",
+  options=crow_clock_div_base_opts,
+  default=18, -- 1/4
+  action=update_crow_clock_div,
+}
+
+mod_params:add{
+  id="crow_clock_div_mult",
+  name="crow clock div x",
+  type="option",
+  options=crow_clock_div_mult_opts,
+  default=6, -- 1
+  action=update_crow_clock_div,
+}
+
 mod_params:add{
   id="crow_load_7u_script",
   name="load 7u companion to crow",
@@ -184,9 +255,7 @@ norns.crow.clock_enable = function()
   -- ]]
 end
 
--- allow setting clock source to crow from from
 crow_clock_enable = function(enable)
-  print("CLOCK ENABLE EVENT: "..enable)
   if enable then
     params:set("clock_source", 4) -- crow
   elseif params:get("clock_source") == 4 then
@@ -220,7 +289,7 @@ norns.crow.init = function()
   end
   norns.crow.receive = function(...) print("crow:", ...) end
 
-  norns.crow.public.reset()       -- clears only norns' LOCAL mirror + callbacks
+  norns.crow.public.reset() -- clears local cache + callbacks
   crow.public.discover()
 end
 norns.crow.init()
