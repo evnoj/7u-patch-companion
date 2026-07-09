@@ -270,7 +270,7 @@ norns.crow.init = function()
   norns.crow.events.clock_enable = crow_clock_enable
 
   norns.crow.public.discovered = function()
-    if crow.public.clocked then
+    if crow.public.clocked == 1 then
       params:set("clock_source", 4)
     end
 
