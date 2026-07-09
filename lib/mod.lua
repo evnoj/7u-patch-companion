@@ -267,10 +267,11 @@ end
 -- original at lua/core/crow.lua
 norns.crow.init = function()
   norns.crow.reset_events()
+  norns.crow.public.reset() -- clears local cache + callbacks
   norns.crow.events.clock_enable = crow_clock_enable
 
   norns.crow.public.discovered = function()
-    if crow.public.clocked == 1 then
+    if params.lookup["clock_source"] and crow.public.clocked == 1 then
       params:set("clock_source", 4)
     end
 
@@ -289,7 +290,6 @@ norns.crow.init = function()
   end
   norns.crow.receive = function(...) print("crow:", ...) end
 
-  norns.crow.public.reset() -- clears local cache + callbacks
   crow.public.discover()
 end
 norns.crow.init()
@@ -377,7 +377,6 @@ end
 
 -- MOD HOOKS
 mod.hook.register("system_post_startup", "7u patch companion post startup", function()
-  crow.public.discover()
   set_endgame_event_handler()
 end)
 
