@@ -228,6 +228,8 @@ mod_params:add{
 }
 mod_params:hide("trackball_y")
 
+-- saves the params to a fixed location
+-- currently there is only one pset, and it's just intended to persist settings
 local function params_save()
   mod_params:write(pset_restore_location, "last")
 end
@@ -241,6 +243,7 @@ local function params_restore()
 end
 
 params_restore()
+menu.exit_hook = params_save
 mod.menu.register(mod.this_name, menu)
 
 -- CROW HOOKS
