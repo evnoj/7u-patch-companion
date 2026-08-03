@@ -1,6 +1,7 @@
 local util = require 'util'
 local mod = require 'core/mods'
-local modmenu = require '7u-patch-companion/lib/modmenu'
+
+local modmenu = include '7u-patch-companion/lib/modmenu/modmenu'
 mlay=include("7u-patch-companion/lib/mlay"):new()
 local coord=include("7u-patch-companion/lib/elems/coord")
 local morphg=include("7u-patch-companion/lib/elems/morphg")
