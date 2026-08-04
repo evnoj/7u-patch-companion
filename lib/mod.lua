@@ -65,7 +65,7 @@ mlay:add_element(
 -- )
 
 -- MOD MENU AND PARAMS
-local menu = modmenu.new("my_mod_menu_id", mod.this_name)
+local menu = modmenu.new("7u_companion_mod_menu", mod.this_name)
 local mod_params = menu.params
 
 mod_params:add{
