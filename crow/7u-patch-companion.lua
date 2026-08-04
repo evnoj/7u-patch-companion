@@ -351,7 +351,6 @@ for i=1,#morphagene_quantizers do
     end
 end
 morphagene_quantizer_active = morphagene_quantizers[0]
-morphagene_prev_note = 0
 
 -- TXI
 txi_vals = {

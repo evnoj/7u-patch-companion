@@ -186,9 +186,33 @@ mod_params:add{
   type="binary",
   behavior="trigger",
   action=function()
-    crow.clear()
-    norns.crow.loadscript(crow_script, true)
-    crow.public.discover()
+    -- need to wait between crow commands to avoid corrupting the loaded script
+    -- was getting random public.discover() line at front of crow script
+    -- see the defintion of loadscript to understand why is happening,
+    -- writes "^^s" to crow and then sleeps so the public discovery stuff
+    -- sneaks in before the "^^w"
+    clock.run(function()
+      -- clear is unnecessary
+      -- crow.clear()
+      -- clock.sleep(0.5)
+      norns.crow.loadscript(crow_script, true)
+      -- maybe don't even need to call discover manually?
+      -- is called via "^^ready" which calls norns.crow.public.ready
+      -- clock.sleep(1)
+      -- crow.public.discover()
+    end)
+  end,
+}
+
+mod_params:add{
+  id="crow_clear_script",
+  name="clear crow script",
+  type="binary",
+  behavior="trigger",
+  action=function()
+    clock.run(function()
+      crow.clear()
+    end)
   end,
 }
 
@@ -239,10 +263,10 @@ local function params_restore()
     debug_msg("attempted to load "..pset_restore_location.." but file didn't exist")
     return
   end
-  mod_params:read(pset_restore_location)
+  -- read in params without a bang, since crow pubvars might not be discovered yet
+  mod_params:read(pset_restore_location, true)
 end
 
-params_restore()
 menu.exit_hook = params_save
 mod.menu.register(mod.this_name, menu)
 
@@ -270,8 +294,8 @@ end
 -- prevent crow from being reset when loading a script or hotplugging
 -- original at lua/core/crow.lua
 norns.crow.init = function()
-  norns.crow.reset_events()
-  norns.crow.public.reset() -- clears local cache + callbacks
+  -- norns.crow.reset_events()
+  -- norns.crow.public.reset() -- clears local cache + callbacks
   norns.crow.events.clock_enable = crow_clock_enable
 
   norns.crow.public.discovered = function()
@@ -283,6 +307,7 @@ norns.crow.init = function()
   end
   norns.crow.add = function(id, name, dev)
     print(">>>>>> norns.crow.add / " .. id .. " / " .. name)
+    norns.crow.events.clock_enable = crow_clock_enable
     crow.public.discover()
   end
   norns.crow.remove = function(id)
@@ -291,12 +316,13 @@ norns.crow.init = function()
     if params:get("clock_source") == 4 then
       params:set("clock_source", 1)
     end
+    -- norns.crow.reset_events()
+    norns.crow.public.reset() -- clears local cache + callbacks
   end
   norns.crow.receive = function(...) print("crow:", ...) end
 
-  crow.public.discover()
+  -- crow.public.discover()
 end
-norns.crow.init()
 
 -- ENDGAME TRACKBALL
 local endgame_handlers = {
@@ -394,3 +420,7 @@ mod.hook.register("system_pre_shutdown", "7u patch companion pre shutdown", func
   params_save()
 end)
 
+-- INIT
+norns.crow.init()
+crow.public.discover()
+params_restore()
