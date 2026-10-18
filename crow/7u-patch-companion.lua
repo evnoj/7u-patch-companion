@@ -417,11 +417,19 @@ txi_poll_handlers = {
             note = note + 12 * public.morphagene_octave_offset
             if note <= 0 then
                 note = note + 12 * (1 + note // -12)
+            elseif note > 48 then
+                while note > 48 do
+                    note = note - 12
+                end
             end
         elseif note < 0 then
             note = note - 12 * public.morphagene_octave_offset
             if note >= 0 then
                 note = note - 12 * (1 + note // 12)
+            elseif note < -48 then
+                while note < -48 do
+                    note = note + 12
+                end
             end
         end
 
