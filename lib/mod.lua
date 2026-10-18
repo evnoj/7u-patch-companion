@@ -252,6 +252,25 @@ mod_params:add{
 }
 mod_params:hide("trackball_y")
 
+mod_params:add{
+  id="trackball_sensitivity",
+  name="trackball sens",
+  type="control",
+  controlspec=controlspec.def{
+    min = 0.005,
+    max = 0.05,
+    warp = 'exp',
+    step = 0.001, -- value quantization
+    default = 0.005,
+    quantum = 0.002,
+    wrap = false
+  },
+  formatter=function(param) return string.format("%.3f", param:get()) end,
+  action=function(v)
+    trackball_pointer_sensitivity = v
+  end
+}
+
 -- saves the params to a fixed location
 -- currently there is only one pset, and it's just intended to persist settings
 local function params_save()
